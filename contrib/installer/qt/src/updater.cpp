@@ -33,7 +33,7 @@ bool sucess=false;
 
 string initicker="BTCS";// check GetDefaultDataDir() for lowercase
 string DirName="Bitcoin-sCrypt";
-string downlocation="http://altcoinwarz.com:8080/BTCS";
+string downlocation="https://altcoinwarz.com/BTCS";
 QString downloadLocation;
 string appname="Bitcoin-sCrypt-qt.exe";
 string apppath="C:\\"+DirName+"\\";
