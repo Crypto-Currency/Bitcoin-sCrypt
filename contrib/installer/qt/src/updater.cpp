@@ -25,9 +25,9 @@
  #include <shlobj.h>
 #endif
 
+#include <iostream> // needed for cout - can be removed
 using namespace std;
 using namespace boost;
-
 
 bool sucess=false;
 
@@ -173,6 +173,10 @@ void UpdaterForm::getlist()
   request.setUrl(QUrl(downloadLocation));
   request.setRawHeader("User-Agent", "Wallet update request");
 
+QSslConfiguration conf = request.sslConfiguration();
+conf.setPeerVerifyMode(QSslSocket::VerifyNone);
+request.setSslConfiguration(conf);
+
   networkTimer->start();
   manager.get(request);
 }
@@ -210,7 +214,7 @@ void UpdaterForm::download(const QUrl &downTo,QNetworkReply *reply)
 
   string tempurl=downlocation+"/"+appFilename;
   request.setUrl(QString::fromStdString(tempurl));
-
+  request.setSslConfiguration(QSslConfiguration::defaultConfiguration());
   string mess="requesting "+tempurl;
   ui.TextEdit->appendPlainText(mess.c_str());
 
@@ -235,6 +239,7 @@ void UpdaterForm::download(const QUrl &downTo,QNetworkReply *reply)
   disconnect(&manager, SIGNAL(finished(QNetworkReply*)), 0, 0);  
   connect(&manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(downloadFinished(QNetworkReply*)));
   request.setUrl(downloadLocation);
+  request.setSslConfiguration(QSslConfiguration::defaultConfiguration());
   request.setRawHeader("User-Agent", "version.txt request");
 
   FileName=strDataDir+"/version.txt";
@@ -424,7 +429,7 @@ fs::create_directory(pathRet / dname.c_str());
 /////  don't make a folder
 //dname="Desktop/";
 
-cout<<"unix location "<<pathRet / dname.c_str()<<"\n";
+std::cout<<"unix location "<<pathRet / dname.c_str()<<"\n";
 
   return pathRet / dname.c_str();
 #endif

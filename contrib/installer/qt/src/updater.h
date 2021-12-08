@@ -6,6 +6,8 @@
 #include <QNetworkReply>
 #include <QTimer>
 
+#include <openssl/crypto.h>
+
 #include <QtGlobal>
 #if QT_VERSION >= 0x050000
 //  #include <QApplication>
