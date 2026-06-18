@@ -607,13 +607,26 @@ inline void SetThreadPriority(int nPriority)
     SetThreadPriority(GetCurrentThread(), nPriority);
 }
 #else
+inline void* pthread_compatibility_bridge(void* arg)
+{
+  std::pair<void (*)(void*), void*>* params = (std::pair<void (*)(void*), void*>*)arg;
+  params->first(params->second);
+  delete params;
+  return NULL;
+}
+
 inline pthread_t CreateThread(void(*pfn)(void*), void* parg, bool fWantHandle=false)
 {
     pthread_t hthread = 0;
-    int ret = pthread_create(&hthread, NULL, (void*(*)(void*))pfn, parg);
+    
+    // Allocate a small temporary pair container to safely bridge the function data
+    std::pair<void (*)(void*), void*>* params = new std::pair<void (*)(void*), void*>(pfn, parg);
+
+    int ret = pthread_create(&hthread, NULL, pthread_compatibility_bridge, params);
     if (ret != 0)
     {
         printf("Error: pthread_create() returned %d\n", ret);
+        delete params; // Clean up memory if the thread fails to launch
         return (pthread_t)0;
     }
     if (!fWantHandle)

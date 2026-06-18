@@ -2,7 +2,7 @@
 # Distributed under the MIT/X11 software license, see the accompanying
 # file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-USE_UPNP:=0
+USE_UPNP:=-
 
 LINK:=$(CXX)
 
@@ -88,12 +88,16 @@ DEBUGFLAGS=-g
 
 # CXXFLAGS can be specified on the make command line, so we use xCXXFLAGS that only
 # adds some defaults in front. Unfortunately, CXXFLAGS=... $(CXXFLAGS) does not work.
-xCXXFLAGS=-O2 -msse2 -pthread -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter \
-    $(DEBUGFLAGS) $(DEFS) $(HARDENING) $(CXXFLAGS)
+xCXXFLAGS=-O2 $(EXT_OPTIONS) -pthread -Wall -Wextra -Wno-ignored-qualifiers -Wno-unused-parameter \
+    $(DEBUGFLAGS) $(DEFS) $(HARDENING) $(CXXFLAGS) -Wno-unused-variable \
+    -Wno-deprecated-declarations -Wno-format -Wno-format-security -Wno-deprecated-copy
+
 
 # LDFLAGS can be specified on the make command line, so we use xLDFLAGS that only
 # adds some defaults in front. Unfortunately, LDFLAGS=... $(LDFLAGS) does not work.
-xLDFLAGS=$(LDHARDENING) $(LDFLAGS)
+#xLDFLAGS=$(LDHARDENING) $(LDFLAGS)
+# Add the flag here to silence pure C files like scrypt.c
+xCFLAGS=-O2 $(EXT_OPTIONS) -pthread -Wall -Wextra $(DEFS) $(HARDENING) $(CFLAGS) -Wno-deprecated-declarations
 
 OBJS= \
     obj/version.o \
