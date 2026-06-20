@@ -3214,6 +3214,42 @@ bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
 // a large 4-byte int at any alignment.
 unsigned char pchMessageStart[4] = { 0xfc, 0xd9, 0xb7, 0xdd };
 
+int ExtractVersionInteger(const std::string& strSubVer)
+{
+  std::string cleanStr = "";
+  for (char c : strSubVer)
+  {
+    if ((c >= '0' && c <= '9') || c == '.')
+    {
+      cleanStr += c;
+    }
+  }
+
+  if (cleanStr.empty()) return 0;
+
+  std::stringstream ss(cleanStr);
+  std::string item;
+  int major = 0, minor = 0, revision = 0, build = 0;
+
+  try
+  {
+    if (std::getline(ss, item, '.')) major = std::stoi(item);
+    if (std::getline(ss, item, '.')) minor = std::stoi(item);
+    if (std::getline(ss, item, '.')) revision = std::stoi(item);
+    if (std::getline(ss, item, '.')) build = std::stoi(item);
+  }
+  catch (...)
+  {
+    // If integer conversion overflows or encounters a bad format, fail safe
+    return 0; 
+  }
+
+    // Safety limit to prevent arbitrary giant numbers breaking your threshold logic
+  if (major > 99) major = 99;
+
+  return (major * 1000000) + (minor * 10000) + (revision * 100) + build;
+}
+
 bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 {
     static map<CService, CPubKey> mapReuseKey;
@@ -3256,24 +3292,32 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         if (!vRecv.empty())
         {
           vRecv >> pfrom->strSubVer;
-          printf("peer connecting subver is %s",pfrom->strSubVer.c_str());
-// drop connections from older versions than 2.0
-          int iSubVer=pfrom->strSubVer.find("BTCS:2");
-          if((iSubVer < 1) && (nBestHeight > getPosFixBlock()))
+          printf("peer connecting subver is %s", pfrom->strSubVer.c_str());
+
+          // Check 1 & 2: Boundary test the string length
+          if (pfrom->strSubVer.empty() || pfrom->strSubVer.length() < 5 || pfrom->strSubVer.length() > 256)
           {
-            printf("  -  disconnecting .....\n");
-            pfrom->fDisconnect = true;
-            return false;
-          }
-// drop connections from older versions than 2.2
-          iSubVer=pfrom->strSubVer.find("BTCS:2.2");
-          if((iSubVer < 1) && (nBestHeight > getPosReduceBlock()))
-          {
-            printf("  -  disconnecting .....\n");
+            printf("  - disconnecting out-of-bounds subver length (%u)\n", (unsigned int)pfrom->strSubVer.length());
             pfrom->fDisconnect = true;
             return false;
           }
 
+          // Check 3: Network isolation check (Explicitly look for "BTCS:")
+          if (pfrom->strSubVer.find("BTCS:") == std::string::npos && (nBestHeight > getPosFixBlock()))
+          {
+            printf("  - disconnecting alien wallet .....\n");
+            pfrom->fDisconnect = true;
+            return false;
+          }
+
+          // Check 4: Safe numerical comparison
+          int nRemoteClientVersion = ExtractVersionInteger(pfrom->strSubVer);
+          if (nRemoteClientVersion < DROP_VERSION && (nBestHeight > getPosFixBlock()))
+          {
+            printf("  - disconnecting legacy peer version %d (DROP_VERSION is %d)\n", nRemoteClientVersion, DROP_VERSION);
+            pfrom->fDisconnect = true;
+            return false;
+          }
           printf("\n");
         }
 

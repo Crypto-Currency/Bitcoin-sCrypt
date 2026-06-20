@@ -82,11 +82,12 @@ void Shutdown(void* parg)
         UnregisterWallet(pwalletMain);
         delete pwalletMain;
         CreateThread(ExitTimeout, NULL);
-        Sleep(50);
+        Sleep(200); // Give the heap a moment to settle after deletion
         printf("Bitcoin-sCrypt exited\n\n");
         fExit = true;
 #ifndef QT_GUI
         // ensure non UI client get's exited here, but let Bitcoin-sCrypt-Qt reach return 0; in bitcoin.cpp
+        Sleep(200); 
         exit(0);
 #endif
     }
@@ -465,8 +466,10 @@ bool AppInit2()
 
     if (!fDebug)
         ShrinkDebugFile();
-    printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    printf("\n\n\n\n\n");
     printf("Bitcoin-sCrypt version %s (%s)\n", FormatFullVersion().c_str(), CLIENT_DATE.c_str());
+    printf("client version %d \n", CLIENT_VERSION);
+
     printf("Startup time: %s\n", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
     printf("Default data directory %s\n", GetDefaultDataDir().string().c_str());
     printf("Used data directory %s\n", GetDataDir().string().c_str());
@@ -606,6 +609,11 @@ bool AppInit2()
         PrintBlockTree();
         return false;
     }
+
+
+ // by Simone: start RPC server before loading the blockchain
+    if (fServer)
+        CreateThread(ThreadRPCServer, NULL);
 
     uiInterface.InitMessage(_("Loading block index..."));
     printf("Loading block index...\n");
@@ -819,10 +827,14 @@ bool AppInit2()
     if (!CreateThread(StartNode, NULL))
         InitError(_("Error: could not start node"));
 
-    if (fServer)
-        CreateThread(ThreadRPCServer, NULL);
+// already started it above in load blockchain
+//    if (fServer)
+//       CreateThread(ThreadRPCServer, NULL);
 
     // ********************************************************* Step 11: finished
+
+  // by Simone: starting the RPC thread was here, instead we just unleash it
+    enableRpcExecution = true;
 
     uiInterface.InitMessage(_("Done loading"));
     printf("Done loading\n");

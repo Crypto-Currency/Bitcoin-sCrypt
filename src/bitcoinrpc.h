@@ -20,6 +20,10 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
+// by Simone: we enable execution after everything started
+extern bool enableRpcExecution;
+
+
 // Boost Support for 1.70+
 #if BOOST_VERSION >= 107000
     #define GetIOService(s) ((boost::asio::io_context&)(s).get_executor().context())

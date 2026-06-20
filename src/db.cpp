@@ -26,6 +26,7 @@ using namespace boost;
 
 
 unsigned int nWalletDBUpdated;
+unsigned int loadProgress;
 
 char pString[256];
 string mess;
@@ -843,6 +844,11 @@ bool CTxDB::LoadBlockIndexGuts()
     unsigned int steptemp=0;
     string tempmess;
 
+    double ccc = 0;
+    double cnt = 0;
+    int oldProgress = -1;
+    cnt = (double)boost::filesystem::file_size(GetDataDir() / "blkindex.dat") / 432.0;
+
     loop()
     {
         // Read next record
@@ -887,11 +893,25 @@ bool CTxDB::LoadBlockIndexGuts()
             pindexNew->nBits          = diskindex.nBits;
             pindexNew->nNonce         = diskindex.nNonce;
 
+ccc++;
             tempcount ++;
             if(tempcount>=1000)
             {
               steptemp ++;
-              sprintf(pString, _("loading %d").c_str(), steptemp * 1000);
+
+            int progress = (ccc / cnt) * 100;
+            if (progress > 100)
+            {
+              progress = 100;
+            }
+            if (progress != oldProgress)
+            {
+                loadProgress = progress;        // store for global use
+            }
+
+
+
+              sprintf(pString, _("loading %d  (%d\%)").c_str(), steptemp * 1000,progress);
               uiInterface.InitMessage(pString);
               tempcount=0;
             }

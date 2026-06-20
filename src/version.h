@@ -23,6 +23,9 @@ extern const std::string CLIENT_NAME;
 extern const std::string CLIENT_BUILD;
 extern const std::string CLIENT_DATE;
 
+// cutoff for older wallets
+static const int DROP_VERSION = 2020000;
+
 //
 // network protocol versioning
 //

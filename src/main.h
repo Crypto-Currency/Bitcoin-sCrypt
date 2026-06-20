@@ -164,6 +164,8 @@ int getPosStartBlock();
 int getPosFixBlock();
 int getPosReduceBlock();
 
+int ExtractVersionInteger(const std::string& strSubVer);
+
 bool GetWalletFile(CWallet* pwallet, std::string &strWalletFileOut);
 
 /** Position on disk for a particular transaction. */

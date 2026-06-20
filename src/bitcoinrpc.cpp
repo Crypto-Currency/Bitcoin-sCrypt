@@ -39,6 +39,9 @@ using namespace boost;
 using namespace boost::asio;
 using namespace json_spirit;
 
+// by Simone: we enable execution after everything started
+bool enableRpcExecution = false;
+
 void ThreadRPCServer2(void* parg);
 
 static std::string strRPCUserColonPass;
@@ -3509,8 +3512,18 @@ void ThreadRPCServer3(void* parg)
     }
 }
 
+// by Simone: coming from db.cpp, progress of blockchain load
+extern unsigned int loadProgress;
 json_spirit::Value CRPCTable::execute(const std::string &strMethod, const json_spirit::Array &params) const
 {
+  // by Simone: check if is enabled
+  if (!enableRpcExecution)
+  {
+    char m[256];
+    sprintf(m, "Wallet is loading the blockchain (%d%%), please wait", loadProgress);
+    throw JSONRPCError(RPC_MISC_ERROR, m);
+  }
+
     // Find method
     const CRPCCommand *pcmd = tableRPC[strMethod];
     if (!pcmd)
