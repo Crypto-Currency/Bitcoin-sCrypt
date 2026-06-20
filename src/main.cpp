@@ -3501,6 +3501,10 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
                 break;
             }
         }
+
+       // Lock out the Qt GUI thread while we inspect LevelDB/BerkeleyDB assets
+        LOCK(cs_main);
+
         CTxDB txdb("r");
         for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
         {
@@ -3612,6 +3616,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         uint256 hashStop;
         vRecv >> locator >> hashStop;
 
+        LOCK(cs_main);
+
         // Find the last block the caller has in the main chain
         CBlockIndex* pindex = locator.GetBlockIndex();
 
@@ -3648,6 +3654,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         CBlockLocator locator;
         uint256 hashStop;
         vRecv >> locator >> hashStop;
+
+        LOCK(cs_main);
 
         CBlockIndex* pindex = NULL;
         if (locator.IsNull())
@@ -3765,8 +3773,18 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         CInv inv(MSG_BLOCK, block.GetHash());
         pfrom->AddInventoryKnown(inv);
 
-        if (ProcessBlock(pfrom, &block))
+// Forces Windows to thread-sync properly before touching the database indices
+        bool fBlockProcessed = false;
+        {
+            LOCK(cs_main);
+            fBlockProcessed = ProcessBlock(pfrom, &block);
+        }
+
+//        if (ProcessBlock(pfrom, &block))
+//            mapAlreadyAskedFor.erase(inv);
+        if (fBlockProcessed)
             mapAlreadyAskedFor.erase(inv);
+
         if (block.nDoS) pfrom->Misbehaving(block.nDoS);
     }
 
