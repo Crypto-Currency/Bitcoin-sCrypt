@@ -893,27 +893,25 @@ bool CTxDB::LoadBlockIndexGuts()
             pindexNew->nBits          = diskindex.nBits;
             pindexNew->nNonce         = diskindex.nNonce;
 
-ccc++;
+
+            ccc++;
             tempcount ++;
             if(tempcount>=1000)
             {
-              steptemp ++;
-
-            int progress = (ccc / cnt) * 100;
-            if (progress > 100)
-            {
-              progress = 100;
-            }
-            if (progress != oldProgress)
-            {
-                loadProgress = progress;        // store for global use
-            }
-
-
-
-              sprintf(pString, _("loading %d  (%d\%)").c_str(), steptemp * 1000,progress);
-              uiInterface.InitMessage(pString);
               tempcount=0;
+
+              int progress = (ccc / cnt) * 100;
+              if (progress > 100)
+              {
+                progress = 100;
+              }
+              if (progress != oldProgress)
+              {
+                  loadProgress = progress;        // store for global use
+              }
+
+              sprintf(pString, _("loading  (%d\%)").c_str(),progress);
+              uiInterface.InitMessage(pString);
             }
 
             // Watch for genesis block
@@ -937,10 +935,6 @@ ccc++;
         }
     }
     pcursor->close();
-
-    steptemp=steptemp*1000 +tempcount;
-    sprintf(pString, _("%d").c_str(), steptemp);
-    uiInterface.InitMessage(pString);
 
     return true;
 }

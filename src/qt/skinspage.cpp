@@ -20,6 +20,7 @@
 #include <QVector>
 #include <QRegExp>
 #include <QHeaderView>
+#include <QCryptographicHash>
 
 #include <QDebug>
 using namespace std;
@@ -42,7 +43,7 @@ SkinsPage::SkinsPage(QWidget *parent) : QWidget(parent), ui(new Ui::SkinsPage)
   inipath=GetDataDir().string().c_str();
   inipath=inipath+"/themes/";
   loadSettings();
- 
+
   filesFoundLabel = new QLabel;
   statusLabel = new QLabel;
 
@@ -254,14 +255,18 @@ void SkinsPage::loadSettings()
  
 void SkinsPage::loadSkin()
 {
-  QFile styleFile(inipath+"/"+inifname);
-  styleFile.open(QFile::ReadOnly);
-  QByteArray bytes = styleFile.readAll();
-  QString newStyleSheet(bytes);
-  newStyleSheet.replace("myimages",inipath+"/images"); // deal with relative path
-  QApplication *app = (QApplication*)QApplication::instance();
-  app->setStyleSheet(NULL);
-  app->setStyleSheet(newStyleSheet);
+// load skin ONLY if actually one is set...
+	if (inifname != "")
+	{
+		QFile styleFile(inipath + "/" + inifname);
+		styleFile.open(QFile::ReadOnly);
+		QByteArray bytes = styleFile.readAll();
+		QString newStyleSheet(bytes);
+		newStyleSheet.replace("myimages", inipath + "/images"); // deal with relative path
+		QApplication *app = (QApplication*)QApplication::instance();
+		app->setStyleSheet(NULL);
+		app->setStyleSheet(newStyleSheet);
+	}
 }
 
 void SkinsPage::resizeEvent(QResizeEvent* event)
@@ -274,25 +279,100 @@ void SkinsPage::resizeEvent(QResizeEvent* event)
 void SkinsPage::getlist()
 {
   // show a downloading message in status bar
-  statusLabel->setText("<b>" + tr("Downloading themes from http://btcs.altcoinwarz.com...") + "</b>");
+  statusLabel->setText("<b>" + tr("Downloading themes...") + "</b>");
   latestNetError = "";
 
   // first, let's disable the download button (triple-clicks fanatics !)
   downloadButton->setEnabled(false);
 
-  // create dir if not
-  QDir imgdir(inipath + "/images");
-  if (!imgdir.exists())
-    imgdir.mkpath(".");
-
   connect(&manager,SIGNAL(finished(QNetworkReply*)),this,SLOT(getListFinished(QNetworkReply*)));
 
   QNetworkRequest request;
-  request.setUrl(QUrl("http://btcs.altcoinwarz.com/themes/list.txt"));
+  request.setUrl(QUrl("http://btcs.altcoinwarz.com/themes/list.v2.txt"));
   request.setRawHeader("User-Agent", "Wallet theme request");
 
   networkTimer->start();
   manager.get(request);
+}
+
+//  ------------------------------------------------------------------------ //
+// function:     checkForUpdates()
+// what it does: check if there are available updates
+// access:       private
+// return:       void
+//  ------------------------------------------------------------------------ //
+void SkinsPage::checkForUpdates()
+{
+// show a downloading message in status bar
+	statusLabel->setText("<b>" + tr("Checking for theme updates...") + "</b>");
+	latestNetError = "";
+
+// first, let's disable the download button (triple-clicks fanatics !)
+	downloadButton->setEnabled(false);
+
+// connect the event and launch it
+	connect(&manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(checkForUpdatesCore(QNetworkReply*)));
+	QNetworkRequest request;
+	request.setUrl(QUrl("http://btcs.altcoinwarz.com/themes/list.v2.txt"));
+	request.setRawHeader("User-Agent", "Wallet theme request");
+	networkTimer->start();
+	manager.get(request);
+}
+
+//  ------------------------------------------------------------------------ //
+// function:     checkForUpdatesCore(QNetworkReply* reply)
+// what it does: check if there are available updates (CORE)
+// access:       private
+// return:       void
+//  ------------------------------------------------------------------------ //
+void SkinsPage::checkForUpdatesCore(QNetworkReply* reply)
+{
+	QCryptographicHash md5_r(QCryptographicHash::Md5);
+	QCryptographicHash md5_l(QCryptographicHash::Md5);
+
+// calculate the md5 of remote and local files
+	if (netHandleError(reply, "http://btcs.altcoinwarz.com/themes/list.v2.txt"))
+	{
+
+	// get the remote MD5
+		disconnect(&manager, SIGNAL(finished(QNetworkReply*)), 0, 0);  
+		md5_r.addData(reply->readAll());
+
+	// get the local MD5
+	    QString filename = inipath + "/list.v2.txt";
+		QFile file(filename);
+		file.open(QIODevice::ReadOnly);
+		md5_l.addData(file.readAll());
+		file.close();
+
+	// compare
+		if (md5_r.result().toHex() != md5_l.result().toHex())
+		{
+			statusLabel->setText("<b>" + tr("A new theme pack is available, click Download Themes to update.") + "</b>");
+		}
+		else
+		{
+			statusLabel->setText("<b>" + tr("Theme pack is up to date.") + "</b>");
+		}
+		latestNetError = "";
+	}
+	else
+	{
+		reply->abort();
+	}
+	downloadButton->setEnabled(true);
+}
+
+//  ------------------------------------------------------------------------ //
+// function:     showEvent(QShowEvent* event)
+// what it does: run on show
+// access:       protected
+// return:       void
+//  ------------------------------------------------------------------------ //
+void SkinsPage::showEvent(QShowEvent* event)
+{
+// check for updates in the theme pack
+	checkForUpdates();
 }
 
 bool SkinsPage::netHandleError(QNetworkReply* reply, QString urlDownload)
@@ -301,10 +381,14 @@ bool SkinsPage::netHandleError(QNetworkReply* reply, QString urlDownload)
 	if (reply->error())
 	{
 		latestNetError = tr("Download of ") + urlDownload + tr(" failed: ") + reply->errorString();
+reply->deleteLater();
+return false;
 	}
 	else if (isHttpRedirect(reply))
 	{
 		latestNetError = tr("HTTP redirect while attempting download of ") + urlDownload;
+reply->deleteLater();
+return false;
 	}
 	else
 	{
@@ -314,34 +398,82 @@ bool SkinsPage::netHandleError(QNetworkReply* reply, QString urlDownload)
 	}
 
 	// execute the same function, displaying latest occured error
-	networkTimeout();
+//	networkTimeout();
 	return(false);
 }
 
 void SkinsPage::getListFinished(QNetworkReply* reply)
 {
-  if (netHandleError(reply, "http://btcs.altcoinwarz.com/themes/list.txt")) {
+  if (netHandleError(reply, "http://btcs.altcoinwarz.com/themes/list.v2.txt"))
+  {
     disconnect(&manager, SIGNAL(finished(QNetworkReply*)), 0, 0);  
     connect(&manager, SIGNAL(finished(QNetworkReply*)), SLOT(downloadFinished(QNetworkReply*)));
-    QString pagelist=reply->readAll();
+
+    QString pagelist = reply->readAll();
     QStringList list = pagelist.split('\n');
     QString line;
 
-    for(int i=0;i<list.count();i++)
+    filesToDownload.clear();
+
+    // saves also the descriptor, will be used to check for an new version
+    download((QString)"http://btcs.altcoinwarz.com/themes/list.v2.txt");
+    for (int i = 0; i < list.count(); i++)
     {
       line=list.at(i).toLocal8Bit().constData();
-      line.simplified(); // strip extra characters
+      line = line.simplified(); // strip extra characters
       line.replace("\r",""); // this one too
-      if(line.length())
-      {  
-        download("http://btcs.altcoinwarz.com/themes/"+line);
-      } 
+      if (line.length())
+      {
+        if (line.startsWith("createDir::")) // by Simone: which subfolders need to be created, are declared in the file
+        {
+          line.replace("createDir::", "");	
+printf("Creating directory:%s\n", qUtf8Printable(line));
+          // create dir if it doesn't exist yet
+          QDir imgdir(inipath + line);
+          if (!imgdir.exists())
+          {
+            imgdir.mkpath(".");
+          }
+        }
+        else if (!line.startsWith("#")) // by Simone: added comment lines, skip them
+        {  
+printf("downloading file:%s\n", qUtf8Printable(line));
+//          download("http://btcs.altcoinwarz.com/themes/" + line);
+          filesToDownload.append("http://btcs.altcoinwarz.com/themes/" + line);
+        }
+      }
     }
+    //  next to download files one at a time - server doesn't like 107 files all at once
+    startNextDownload();
   }
   else
   {
     reply->abort();
-  } 
+  }
+}
+
+void SkinsPage::startNextDownload()
+{
+    if (filesToDownload.isEmpty())
+    {
+      statusLabel->setText("");
+ 
+      // Safely disconnect the finished signal
+      disconnect(&manager, SIGNAL(finished(QNetworkReply*)), 0, 0);
+        
+      // Refresh the UI themes list
+      find();
+        
+      emit information(tr("Themes Download"), tr("Themes were successfully downloaded and installed."));
+      return; 
+    }
+
+    // Get the next URL and remove it from the list
+    QString nextUrl = filesToDownload.takeFirst();
+    
+//    printf("Downloading next file: %s\n", qUtf8Printable(nextUrl));
+statusLabel->setText(tr("Downloading file %1").arg(nextUrl));
+    download(QUrl(nextUrl));
 }
 
 void SkinsPage::download(const QUrl &filename)
@@ -368,15 +500,24 @@ void SkinsPage::downloadFinished(QNetworkReply *reply)
     currentDownloads.removeAll(reply);
     reply->deleteLater();
 
+    startNextDownload();
     // when finish all, re-enable the download button and force a find
-    if (currentDownloads.isEmpty()) 
-    {
-	  statusLabel->setText("");
-      downloadButton->setEnabled(true);
-      disconnect(&manager, SIGNAL(finished(QNetworkReply*)), 0, 0);  
-      find();
-      emit information(tr("Themes Download"), tr("Themes were successfully downloaded and installed."));
-    }
+//    if (currentDownloads.isEmpty()) 
+//    {
+//	  statusLabel->setText("");
+//      downloadButton->setEnabled(true);
+//      disconnect(&manager, SIGNAL(finished(QNetworkReply*)), 0, 0);  
+//      find();
+//      emit information(tr("Themes Download"), tr("Themes were successfully downloaded and installed."));
+//    }
+  }
+  else
+  {
+    // Safety check: if an error happened, clean up and move to the next file 
+    // so the wallet doesn't get permanently stuck mid-sync.
+    currentDownloads.removeAll(reply);
+    reply->deleteLater();
+    startNextDownload();
   }
 }
 
