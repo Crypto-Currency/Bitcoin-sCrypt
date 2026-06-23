@@ -49,7 +49,7 @@
           <item>
            <widget class="QLabel" name="labelWalletStatus">
             <property name="toolTip">
-             <string>The displayed information may be out of date. Your wallet automatically synchronizes with the LiteBar network after a connection is established, but this process has not completed yet.</string>
+             <string>The displayed information may be out of date. Your wallet automatically synchronizes with the Bitcoin-sCrypt network after a connection is established, but this process has not completed yet.</string>
             </property>
             <property name="styleSheet">
              <string notr="true">QLabel { color: grey; }</string>

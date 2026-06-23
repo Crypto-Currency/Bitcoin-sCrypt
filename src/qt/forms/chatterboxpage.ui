@@ -18,19 +18,6 @@
   <property name="windowTitle">
    <string>Chatter Box</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">#mainFrame {
-border: none;
-background: white;
-}
-
-#loginFrame {
-background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ddf, stop: 1 #aaf);
-border: 1px solid gray;
-padding: 10px;
-border-radius: 25px;
-}</string>
-  </property>
   <widget class="QWidget" name="centralwidget">
    <property name="geometry">
     <rect>
