@@ -89,7 +89,7 @@ DEBUGFLAGS=-g
 # CXXFLAGS can be specified on the make command line, so we use xCXXFLAGS that only
 # adds some defaults in front. Unfortunately, CXXFLAGS=... $(CXXFLAGS) does not work.
 xCXXFLAGS=-O2 $(EXT_OPTIONS) -pthread -Wall -Wextra -Wno-ignored-qualifiers -Wno-unused-parameter \
-    $(DEBUGFLAGS) $(DEFS) $(HARDENING) $(CXXFLAGS) -Wno-unused-variable \
+    $(DEBUGFLAGS) $(DEFS) $(HARDENING) $(CXXFLAGS) -Wno-unused-variable -Wno-unused-local-typedefs \
     -Wno-deprecated-declarations -Wno-format -Wno-format-security -Wno-deprecated-copy
 
 

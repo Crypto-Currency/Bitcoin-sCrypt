@@ -247,10 +247,6 @@ static bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64& nStakeModifier
             if (fPrintProofOfStake || (pindex->GetBlockTime() + nStakeMinAge - 
                           nStakeModifierSelectionInterval > GetAdjustedTime()))
             {
-//              printf(">> nStakeModifierTime = %" PRI64d ", pindexFrom->GetBlockTime() = %" PRI64d ",\
-                     nStakeModifierSelectionInterval = %" PRI64d "\n",nStakeModifierTime, \
-                     pindexFrom->GetBlockTime(), nStakeModifierSelectionInterval);
-//return false;
               return error("GetKernelStakeModifier() : reached best block %s at height %d \
                             from block %s\n",pindex->GetBlockHash().ToString().c_str(), \
                             pindex->nHeight, hashBlockFrom.ToString().c_str());

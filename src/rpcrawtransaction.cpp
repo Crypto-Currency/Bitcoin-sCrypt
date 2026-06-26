@@ -189,7 +189,7 @@ Value listunspent(const Array& params, bool fHelp)
 Value createrawtransaction(const Array& params, bool fHelp)
 {
 //    if (fHelp || params.size() != 2)
-  if (fHelp || params.size() < 2 || params.size() > 3)
+    if (fHelp || params.size() < 2 || params.size() > 3)
         throw runtime_error(
       "createrawtransaction [{\"txid\":txid,\"vout\":n},...] {address:amount,\"data\":\"hex\",...}\n"
             "Create a transaction spending given inputs\n"
@@ -200,8 +200,8 @@ Value createrawtransaction(const Array& params, bool fHelp)
             "it is not stored in the wallet or transmitted to the network.");
 
     RPCTypeCheck(params, list_of(array_type)(obj_type));
-  if (params[0].is_null() || params[1].is_null())
-    throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, arguments 1 and 2 must be non-null");
+    if (params[0].is_null() || params[1].is_null())
+      throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, arguments 1 and 2 must be non-null");
 
     Array inputs = params[0].get_array();
     Object sendTo = params[1].get_obj();
