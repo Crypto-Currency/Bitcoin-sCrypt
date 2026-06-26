@@ -22,9 +22,9 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
-     <property name="pixmap">
-      <pixmap resource="../bitcoin.qrc">:/images/about</pixmap>
-     </property>
+     <!--property name="pixmap"-->
+      <!--pixmap resource="../bitcoin.qrc">:/images/about</pixmap-->
+     <!--/property-->
     </widget>
    </item>
    <item>
@@ -95,7 +95,7 @@
        </property>
        <property name="text">
         <string>
-          Copyright ©2013- 2015 The Bitcoin sCrypt Developers
+          Copyright ©2013- 2026 The Bitcoin sCrypt Developers
           Copyright © 2009-2013 The Bitcoin &amp; Litecoin Developers
           Distributed under the MIT/X11 software license
           http://www.opensource.org/licenses/mit-license.php
