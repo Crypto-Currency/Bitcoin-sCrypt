@@ -1391,7 +1391,7 @@ unsigned int GetNextTargetRequired_V1(const CBlockIndex* pindexLast, bool fProof
         nActualTimespan = (pindexLast->GetBlockTime() - pindexFirst->GetBlockTime())/nReTargetHistoryFact;
     else
         nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-    printf("  nActualTimespan = %" PRI64d "  before bounds\n", nActualTimespan);
+//    printf("  nActualTimespan = %" PRI64d "  before bounds\n", nActualTimespan);
     if (nActualTimespan < nTargetTimespan/4)
         nActualTimespan = nTargetTimespan/4;
     if (nActualTimespan > nTargetTimespan*4)
@@ -1441,8 +1441,8 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits)
     // Check proof of work matches claimed amount
     if (hash > bnTarget.getuint256())
     {
-printf("target %s \n",bnTarget.GetHex().c_str());
-printf("hash   %s \n",hash.GetHex().c_str());
+//printf("target %s \n",bnTarget.GetHex().c_str());
+//printf("hash   %s \n",hash.GetHex().c_str());
       return error("CheckProofOfWork() : hash doesn't match nBits (hash > bntraget)\n");
     }
 

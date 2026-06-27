@@ -47,8 +47,8 @@ LIBS+= \
  -Wl,-B$(LMODE2) \
    -l z \
    -l dl \
-   -l pthread
-
+   -l pthread \
+   -Wl,-z,stack-size=16777216
 
 # Hardening
 # Make some classes of vulnerabilities unexploitable in case one is discovered.

@@ -427,7 +427,6 @@ void SkinsPage::getListFinished(QNetworkReply* reply)
         if (line.startsWith("createDir::")) // by Simone: which subfolders need to be created, are declared in the file
         {
           line.replace("createDir::", "");	
-printf("Creating directory:%s\n", qUtf8Printable(line));
           // create dir if it doesn't exist yet
           QDir imgdir(inipath + line);
           if (!imgdir.exists())
@@ -437,8 +436,6 @@ printf("Creating directory:%s\n", qUtf8Printable(line));
         }
         else if (!line.startsWith("#")) // by Simone: added comment lines, skip them
         {  
-printf("downloading file:%s\n", qUtf8Printable(line));
-//          download("http://btcs.altcoinwarz.com/themes/" + line);
           filesToDownload.append("http://btcs.altcoinwarz.com/themes/" + line);
         }
       }
@@ -501,15 +498,6 @@ void SkinsPage::downloadFinished(QNetworkReply *reply)
     reply->deleteLater();
 
     startNextDownload();
-    // when finish all, re-enable the download button and force a find
-//    if (currentDownloads.isEmpty()) 
-//    {
-//	  statusLabel->setText("");
-//      downloadButton->setEnabled(true);
-//      disconnect(&manager, SIGNAL(finished(QNetworkReply*)), 0, 0);  
-//      find();
-//      emit information(tr("Themes Download"), tr("Themes were successfully downloaded and installed."));
-//    }
   }
   else
   {
