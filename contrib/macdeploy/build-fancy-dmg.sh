@@ -1,48 +1,33 @@
 #!/bin/bash
+# Stop the script immediately if any individual command fails
+set -e
 
-# 1. Dynamically find the .app bundle name in the current directory
-APP_NAME=$(ls -d *.app | head -n 1)
+APP_NAME="Bitcoin-sCrypt-qt.app"
+DMG_NAME="Bitcoin-sCrypt-qt.dmg"
 
-if [ -z "$APP_NAME" ]; then
-    echo "ERROR: No compiled .app bundle found in this directory!"
-    exit 1
+echo "===================================================="
+echo " Starting Standalone Portable Packaging for Mac... "
+echo "===================================================="
+
+# 1. REMOVED MACDEPLOYQT AND DYLIB COPY LOOPS!
+# Your static binary completely bypasses /Contents/Frameworks/
+
+# 2. Apply a Free Ad-Hoc Code Signature
+# This signs the isolated static binary using your local worker identity,
+# preventing macOS from instantly panicking over missing signature IDs.
+echo "Applying free local ad-hoc code signature..."
+codesign --force --deep --sign - "$APP_NAME"
+
+# 3. Clean up any stale DMG installers from prior runs
+if [ -f "$DMG_NAME" ]; then
+    echo "Clearing out old artifact..."
+    rm "$DMG_NAME"
 fi
 
-echo "Deploying and stitching frameworks for: $APP_NAME"
-
-# 2. Execute baseline macdeployqt routines natively
-macdeployqt "$APP_NAME"
-
-# 3. Forcefully pull down ALL core boost components using the dynamic app target folder
-FRAMEWORKS="./$APP_NAME/Contents/Frameworks"
-cp /usr/local/opt/boost/lib/libboost_atomic.dylib "$FRAMEWORKS/"
-cp /usr/local/opt/boost/lib/libboost_container.dylib "$FRAMEWORKS/"
-cp /usr/local/opt/boost/lib/libboost_chrono.dylib "$FRAMEWORKS/"
-cp /usr/local/opt/boost/lib/libboost_date_time.dylib "$FRAMEWORKS/"
-
-# 4. Grant system modifications permissions to unlock the binaries
-chmod 755 "$FRAMEWORKS"/libboost_*.dylib
-
-# 5. Rewrite the Internal Global ID headers of the helper dylibs themselves
-install_name_tool -id @loader_path/libboost_atomic.dylib "$FRAMEWORKS/libboost_atomic.dylib"
-install_name_tool -id @loader_path/libboost_container.dylib "$FRAMEWORKS/libboost_container.dylib"
-install_name_tool -id @loader_path/libboost_chrono.dylib "$FRAMEWORKS/libboost_chrono.dylib"
-install_name_tool -id @loader_path/libboost_date_time.dylib "$FRAMEWORKS/libboost_date_time.dylib"
-
-# 6. Route the primary libraries to find their helpers next to them inside the bundle
-install_name_tool -change /usr/local/opt/boost/lib/libboost_atomic.dylib @loader_path/libboost_atomic.dylib "$FRAMEWORKS/libboost_filesystem.dylib"
-install_name_tool -change /usr/local/opt/boost/lib/libboost_atomic.dylib @loader_path/libboost_atomic.dylib "$FRAMEWORKS/libboost_thread.dylib"
-install_name_tool -change /usr/local/opt/boost/lib/libboost_container.dylib @loader_path/libboost_container.dylib "$FRAMEWORKS/libboost_program_options.dylib"
-install_name_tool -change /usr/local/opt/boost/lib/libboost_chrono.dylib @loader_path/libboost_chrono.dylib "$FRAMEWORKS/libboost_thread.dylib"
-install_name_tool -change /usr/local/opt/boost/lib/libboost_date_time.dylib @loader_path/libboost_date_time.dylib "$FRAMEWORKS/libboost_thread.dylib"
-
-# 7. Strip out the file suffix to generate the clean output naming signature
-DMG_NAME="${APP_NAME%.app}.dmg"
-VOL_NAME="${APP_NAME%.app} Installer"
-
-# 8. Execute the final canvas assembly layout matching your custom size profile
+# 4. Build the fancy, stylized layout using create-dmg
+echo "Packaging into fancy distribution DMG..."
 create-dmg \
-  --volname "$VOL_NAME" \
+  --volname "Bitcoin-Fast Installer" \
   --background "./contrib/macdeploy/background.png" \
   --window-pos 200 120 \
   --window-size 500 340 \
@@ -51,3 +36,7 @@ create-dmg \
   --app-drop-link 385 155 \
   "$DMG_NAME" \
   "./$APP_NAME"
+
+echo "===================================================="
+echo " Deployed Successfully! File: $DMG_NAME              "
+echo "===================================================="
